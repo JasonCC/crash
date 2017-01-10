@@ -345,7 +345,7 @@ build_searchdirs(int create, int *preferred)
 	 *  for the two possible /usr/src/redhat/BUILD/kernel-xxx locations 
 	 *  plus the Red Hat debug directory.
 	 */  
-	cnt = DEFAULT_SEARCHDIRS + 3;  
+	cnt = DEFAULT_SEARCHDIRS + 5;  
 
         if ((dirp = opendir("/usr/src"))) {
                 for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) 
