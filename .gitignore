@@ -7,7 +7,6 @@ crash
 CFLAGS.extra
 LDFLAGS.extra
 crash.spec
-*.gz
 *.rpm
 gdb.files
 gdb-7.6/
