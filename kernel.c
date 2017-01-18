@@ -1,7 +1,7 @@
 /* kernel.c - core analysis suite
  *
  * Copyright (C) 1999, 2000, 2001, 2002 Mission Critical Linux, Inc.
- * Copyright (C) 2002-2016 David Anderson
+ * Copyright (C) 2002-2017 David Anderson
  * Copyright (C) 2002-2017 Red Hat, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -3973,7 +3973,7 @@ show_module_taint_4_10(void)
 	char buf1[BUFSIZE];
 	char buf2[BUFSIZE];
 	struct syment *sp;
-	uint *taintsp, taints;
+	ulong *taintsp, taints;
 	bool tnt_mod;
 	char tnt_true;
 	int tnts_len;
@@ -3984,6 +3984,8 @@ show_module_taint_4_10(void)
 		MEMBER_OFFSET_INIT(module_taints, "module", "taints");
 		STRUCT_SIZE_INIT(taint_flag, "taint_flag");
 		MEMBER_OFFSET_INIT(tnt_true, "taint_flag", "true");
+		if (INVALID_MEMBER(tnt_true))
+			MEMBER_OFFSET_INIT(tnt_true, "taint_flag", "c_true");
 		MEMBER_OFFSET_INIT(tnt_mod, "taint_flag", "module");
 	}
 
@@ -3995,7 +3997,10 @@ show_module_taint_4_10(void)
 		readmem(lm->module_struct, KVADDR, modbuf, SIZE(module),
 			"module struct", FAULT_ON_ERROR);
 
-		taints = ULONG(modbuf + OFFSET(module_taints));
+		if (MEMBER_SIZE("module", "taints") == sizeof(ulong))
+			taints = ULONG(modbuf + OFFSET(module_taints));
+		else
+			taints = UINT(modbuf + OFFSET(module_taints));
 
 		if (taints) {
 			found++;
@@ -4026,7 +4031,11 @@ show_module_taint_4_10(void)
 		readmem(lm->module_struct, KVADDR, modbuf, SIZE(module),
 				"module struct", FAULT_ON_ERROR);
 
-		taints = ULONG(modbuf + OFFSET(module_taints));
+		if (MEMBER_SIZE("module", "taints") == sizeof(ulong))
+			taints = ULONG(modbuf + OFFSET(module_taints));
+		else
+			taints = UINT(modbuf + OFFSET(module_taints));
+
 		if (!taints)
 			continue;
 		taintsp = &taints;
@@ -10529,6 +10538,10 @@ show_kernel_taints_v4_10(char *buf, int verbose)
 		STRUCT_SIZE_INIT(taint_flag, "taint_flag");
 		MEMBER_OFFSET_INIT(tnt_true, "taint_flag", "true");
 		MEMBER_OFFSET_INIT(tnt_false, "taint_flag", "false");
+		if (INVALID_MEMBER(tnt_true)) {
+			MEMBER_OFFSET_INIT(tnt_true, "taint_flag", "c_true");
+			MEMBER_OFFSET_INIT(tnt_false, "taint_flag", "c_false");
+		}
 	}
 
 	tnts_len = get_array_length("taint_flags", NULL, 0);
