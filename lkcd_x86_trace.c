@@ -1692,8 +1692,7 @@ find_trace(
 #endif
 		func_name = kl_funcname(pc);
 		if (func_name && !XEN_HYPER_MODE()) {
-			if (strstr(func_name, "kernel_thread") ||
-			    strstr(func_name, "start_secondary")) {
+			if (strstr(func_name, "kernel_thread")) {
 				ra = 0;
 				bp = saddr - 4;
 				asp = (uaddr_t*)
@@ -1719,7 +1718,9 @@ find_trace(
 					ra, sp, bp, asp, 0, 0, 0, EX_FRAME|SET_EX_FRAME_ADDR);
 				return(trace->nframes);
 #ifdef REDHAT
-                        } else if (STREQ(func_name, "cpu_idle")) {
+                        } else if (STREQ(func_name, "cpu_idle") ||
+				STREQ(func_name, "cpu_startup_entry") ||
+				STREQ(func_name, "start_secondary")) {
                                 ra = 0;
                                 bp = sp = saddr - 4;
                                 asp = curframe->asp;
@@ -2733,16 +2734,20 @@ eframe_label(char *funcname, ulong eip)
 	efp = &eframe_labels;
 
 	if (!efp->init) {
-		if (!(efp->syscall = symbol_search("system_call")))
-			error(WARNING, 
-			   "\"system_call\" symbol does not exist\n");
+		if (!(efp->syscall = symbol_search("system_call"))) {
+			if (CRASHDEBUG(1))
+				error(WARNING, 
+					"\"system_call\" symbol does not exist\n");
+		}
 		if ((sp = symbol_search("ret_from_sys_call")))
 			efp->syscall_end = sp;
 		else if ((sp = symbol_search("syscall_badsys")))
 			efp->syscall_end = sp;
-		else
-			error(WARNING, 
+		else {
+			if (CRASHDEBUG(1)) 
+				error(WARNING, 
         "neither \"ret_from_sys_call\" nor \"syscall_badsys\" symbols exist\n");
+		}
 
 		if (efp->syscall) {
                 	efp->tracesys = symbol_search("tracesys");
