@@ -5332,7 +5332,10 @@ x86_64_display_memmap(void)
         ulonglong addr, size;
         uint type;
 
-        e820 = symbol_value("e820");
+	if (get_symbol_type("e820", NULL, NULL) == TYPE_CODE_PTR)
+		get_symbol_data("e820", sizeof(void *), &e820);
+	else
+		e820 = symbol_value("e820");
 	if (CRASHDEBUG(1))
 		dump_struct("e820map", e820, RADIX(16));
         buf = (char *)GETBUF(SIZE(e820map));
@@ -6216,11 +6219,14 @@ x86_64_calc_phys_base(void)
 	 * Linux 4.10 exports it in VMCOREINFO (finally).
 	 */
 	if ((p1 = pc->read_vmcoreinfo("NUMBER(phys_base)"))) {
-		machdep->machspec->phys_base = dtol(p1, QUIET, NULL);
-		free(p1);
+		if (*p1 == '-')
+			machdep->machspec->phys_base = dtol(p1+1, QUIET, NULL) * -1;
+		else
+			machdep->machspec->phys_base = dtol(p1, QUIET, NULL);
 		if (CRASHDEBUG(1))
-			fprintf(fp, "VMCOREINFO: phys_base: %lx\n", 
-				machdep->machspec->phys_base);
+			fprintf(fp, "VMCOREINFO: NUMBER(phys_base): %s -> %lx\n", 
+				p1, machdep->machspec->phys_base);
+		free(p1);
 		return;
 	}
 
